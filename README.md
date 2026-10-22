@@ -8,3 +8,5 @@ Recruitments:
 - Searching inventory
 - The API must return JSON responses
 - The API must handle invalid requests
+- Error Handling
+Tools: Python, JSON, FastAPI
