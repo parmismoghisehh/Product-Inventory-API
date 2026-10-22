@@ -3,6 +3,13 @@ from pydantic import BaseModel
 #Fields: id , name, price, stock, category, description
 app=FastAPI()
 
+
+class Products(BaseModel):
+	name: str
+	category: str
+	stock: int
+	price: float
+	description: str
 products = [
     {
         "id": 1,
@@ -29,46 +36,11 @@ products = [
         "description": "Mechanical keyboard"
     }
 ]
-class Products(BaseModel):
-	id: str
-	name: str
-	category: str
-	stock: int
-	price: float
-	description: str
 #to return all products
-data={}
-@app.get("/products")
-def GetProducts(category: str, description: str, name: str, id: int, stock: int, price: float):
-	return {
-		"id": id,
-		"name": name,
-		"price": price,
-		"stock": stock,
-		"category": category,
-		"description": description,
-	}
-#to return specific product
-@app.get("/products/{id}") 
-def GetProductID(
-	id: str,
-	name: str,
-	price: float,
-	stock: int,
-	category: str,
-	description: str,
-):
-	if id in products:
-		return{
-			"id": id,
-                    "name": name,
-                    "price": price,
-                    "stock": stock,
-                    "category": category,
-                    "description": description,
-        }
-	else:
-		raise HTTPException(status_code=404, detail=f"Product with id {id} does not exist")
+
+@app.get("/products")#passed
+def GetProducts():
+	return products
 # to search products by name
 @app.get("/products/search")
 def Search(name:str):
@@ -77,9 +49,17 @@ def Search(name:str):
 	for product in products:
 		if name in product["name"].lower():
 			result.append(product)
-			raise HTTPException(code_status = 200 , details= "Successfully retreive all products")
+			raise HTTPException(status_code = 200 , details= "Successfully retreive all products")
 			
 	return {"query": name , "results": result}
+#to return specific product
+@app.get("/products/{id}") 
+def GetProductID(id: str):
+    for product in products:
+        if str(product["id"]) == id:
+            return product
+    raise HTTPException(status_code=404, detail="Product not found")
+
 # to create a new product
 @app.post("/products")
 def Create(category, description, name, id, stock, price):
@@ -98,15 +78,15 @@ def Create(category, description, name, id, stock, price):
 @app.put("/products/{id}")
 def Update(id: int, updated_product: Products):
     for index, product in enumerate(products):
-        if product["id"] == id:
-            products[index] = updated_product.dict()
+        if str(product["id"]) == str(id):
+            products[index] = {"id": product["id"], **updated_product.dict()}
             return products[index]
     raise HTTPException(status_code=404, detail=f"Product with id {id} does not exist")
 # to delete an existing product
 @app.delete("/products")
 def Delete(id: int):
     for index, product in enumerate(products):
-        if product["id"] == id:
+        if str(product["id"]) == str(id):
             products.pop(index)
             return {"detail": "Product has been deleted successfully"}
     raise HTTPException(status_code=404, detail=f"Product with id {id} does not exist")
@@ -114,4 +94,3 @@ def Delete(id: int):
 	
 
     
-
