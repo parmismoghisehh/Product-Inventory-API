@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 #Fields: id , name, price, stock, category, description
@@ -9,7 +11,7 @@ class Products(BaseModel):
 	category: str
 	stock: int
 	price: float
-	description: str
+	description: Optional[str] = None
 products = [
     {
         "id": 1,
@@ -41,45 +43,29 @@ products = [
 @app.get("/products")#passed
 def GetProducts():
 	return products
-# to search products by name
-@app.get("/products/search")
-def Search(name:str):
-	name=name.lower()
-	result=[]
-	for product in products:
-		if name in product["name"].lower():
-			result.append(product)
-			raise HTTPException(status_code = 200 , details= "Successfully retreive all products")
-			
-	return {"query": name , "results": result}
-#to return specific product
-@app.get("/products/{id}") 
-def GetProductID(id: str):
-    for product in products:
-        if str(product["id"]) == id:
-            return product
-    raise HTTPException(status_code=404, detail="Product not found")
+
+
 
 # to create a new product
 @app.post("/products")
-def Create(category, description, name, id, stock, price):
-	#users(admin) can add/create new product
+def Create(new_product: Products):
     product = {
-        "id": id,
-        "name": name,
-        "price": price,
-        "stock": stock,
-        "category": category,
-        "description": description,
+        "id": max((int(existing["id"]) for existing in products), default=0) + 1,
+        **new_product.dict(),
     }
     products.append(product)
+    raise HTTPException(status_code=201 , detail="New product created successfully")
     return product
 #to update an existing product
 @app.put("/products/{id}")
 def Update(id: int, updated_product: Products):
     for index, product in enumerate(products):
         if str(product["id"]) == str(id):
-            products[index] = {"id": product["id"], **updated_product.dict()}
+            products[index] = {
+                **product,
+                **updated_product.dict(exclude_unset=True),
+                "id": product["id"],
+            }
             return products[index]
     raise HTTPException(status_code=404, detail=f"Product with id {id} does not exist")
 # to delete an existing product
@@ -90,7 +76,19 @@ def Delete(id: int):
             products.pop(index)
             return {"detail": "Product has been deleted successfully"}
     raise HTTPException(status_code=404, detail=f"Product with id {id} does not exist")
-	
-	
+# to search products by name
+@app.get("/products/search")
+def Search(name: str):
+    result = []
+    for product in products:
+        if name.lower() in product["name"].lower():
+            result.append(product)
+    return result
 
-    
+#to return specific product
+@app.get("/products/{id}")
+def GetProductID(id: str):
+    for product in products:
+        if str(product["id"]) == id:
+            return product
+    raise HTTPException(status_code=404, detail="Product not found")
