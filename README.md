@@ -58,7 +58,3 @@ Description is optional.
 - 204: Product deleted; no response body
 - 404: Product not found
 - 422: Invalid input
-
-## Testing
-
-See testing-evidence.md for test results.
